@@ -2,7 +2,7 @@
 
 **MCP server** for the Kotonoha ecosystem. Tools delegate to the official [`kotonoha`](https://github.com/zyx-corporation/kotonoha-cli) CLI (no arbitrary shell execution).
 
-**Track:** [#128](https://github.com/zyx-corporation/kotonoha-management/issues/128) · [#129](https://github.com/zyx-corporation/kotonoha-management/issues/129) scaffold · [#130](https://github.com/zyx-corporation/kotonoha-management/issues/130) tools · [#131](https://github.com/zyx-corporation/kotonoha-management/issues/131) E2E · [#135](https://github.com/zyx-corporation/kotonoha-management/issues/135) human review prep UI
+**Track:** [#128](https://github.com/zyx-corporation/kotonoha-management/issues/128) · [#129](https://github.com/zyx-corporation/kotonoha-management/issues/129)–[#132](https://github.com/zyx-corporation/kotonoha-management/issues/132) · [#135](https://github.com/zyx-corporation/kotonoha-management/issues/135)
 
 **Normative UX:** [`04_mcp_tools_and_ux.md`](https://github.com/zyx-corporation/kotonoha-management/blob/main/docs/chatgpt-app/04_mcp_tools_and_ux.md)
 
@@ -64,6 +64,16 @@ After the agent flow, call `kotonoha_prepare_human_review` with `delta_id` (and 
 - M2 export JSON for review
 
 See [`docs/ui-design-review-m5-p1-human-review.md`](docs/ui-design-review-m5-p1-human-review.md).
+
+## RDE summary widget (#132)
+
+| Resource | `ui://kotonoha/rde-summary` |
+| --- | --- |
+| MIME | `text/html;profile=mcp-app` |
+| Tools | `kotonoha_rde_validate`, `kotonoha_rde_attach` (via `_meta.ui.resourceUri`) |
+| Payload | `kotonoha.rde_summary.v0.1` in `structuredContent` — validated categories or §4.3 error |
+
+Design record: [`docs/ui-design-review-m5-impl.md`](docs/ui-design-review-m5-impl.md).
 
 ## Cursor / Claude Desktop
 

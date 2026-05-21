@@ -1,6 +1,6 @@
 {
   "name": "kotonoha-mcp",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "MCP server for Kotonoha — delegates to the kotonoha CLI (M5-P1)",
   "type": "module",
   "license": "Apache-2.0",
@@ -18,6 +18,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test:cli": "node --import tsx/esm src/kotonoha.test.ts",
+    "test:unit": "node --import tsx/esm src/rde-summary.test.ts",
     "test:e2e": "node --import tsx/esm scripts/m5_mcp_e2e.ts",
     "contract:cli-only": "bash scripts/contract-cli-only.sh",
     "prepare": "npm run build"

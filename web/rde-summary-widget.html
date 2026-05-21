@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kotonoha RDE summary</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.45;
+      }
+      body {
+        margin: 0;
+        padding: 12px 14px;
+      }
+      .banner {
+        font-size: 0.85rem;
+        opacity: 0.85;
+        border-left: 3px solid #6b7280;
+        padding-left: 10px;
+        margin-bottom: 12px;
+      }
+      .banner p {
+        margin: 4px 0;
+      }
+      h1 {
+        font-size: 1.05rem;
+        margin: 0 0 8px;
+      }
+      .meta {
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+      }
+      .meta dt {
+        font-weight: 600;
+        display: inline;
+      }
+      .meta dd {
+        display: inline;
+        margin: 0 0 4px 6px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 6px 8px;
+        border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+      }
+      th {
+        font-weight: 600;
+      }
+      .error {
+        color: #b45309;
+        background: color-mix(in srgb, #f59e0b 12%, transparent);
+        border-radius: 6px;
+        padding: 10px 12px;
+      }
+      .error p {
+        margin: 6px 0;
+      }
+      .empty {
+        opacity: 0.7;
+        font-size: 0.9rem;
+      }
+      .locale-toggle {
+        font-size: 0.8rem;
+        margin-bottom: 8px;
+      }
+      .locale-toggle button {
+        margin-right: 6px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="empty">Waiting for validated RDE payload…</div>
+    <script>
+      const LABELS = {
+        en: {
+          title_valid: "Validated RDE summary",
+          title_error: "RDE validation failed",
+          spec: "Spec version",
+          subject: "Subject",
+          category: "Category",
+          count: "Items",
+          total: "Total classified items",
+          waiting: "Waiting for validated RDE payload…",
+          no_data: "No structured RDE summary in tool output.",
+        },
+        ja: {
+          title_valid: "検証済み RDE 要約",
+          title_error: "RDE 検証エラー",
+          spec: "仕様バージョン",
+          subject: "対象",
+          category: "カテゴリ",
+          count: "件数",
+          total: "分類項目の合計",
+          waiting: "検証済み RDE ペイロードを待機中…",
+          no_data: "ツール出力に RDE 要約がありません。",
+        },
+      };
+
+      const CATEGORY_LABELS = {
+        preserved: { en: "Preserved", ja: "維持" },
+        transformed: { en: "Transformed", ja: "変換" },
+        lost: { en: "Lost", ja: "喪失" },
+        complemented: { en: "Complemented", ja: "補完" },
+        deviation_risk: { en: "Deviation risk", ja: "逸脱リスク" },
+        intentionally_unresolved: {
+          en: "Intentionally unresolved",
+          ja: "意図的未解決",
+        },
+        next_update_policy: { en: "Next update policy", ja: "次回更新方針" },
+      };
+
+      let locale = "en";
+
+      function pick(obj, keyEn, keyJa) {
+        return locale === "ja" ? obj[keyJa] ?? obj[keyEn] : obj[keyEn] ?? obj[keyJa];
+      }
+
+      function resolveSummary() {
+        const openai = window.openai;
+        const structured =
+          openai?.toolOutput?.structuredContent ??
+          openai?.toolOutput?.rde_summary ??
+          openai?.toolOutput;
+        if (
+          structured &&
+          structured.format === "kotonoha.rde_summary.v0.1"
+        ) {
+          return structured;
+        }
+        const textBlock = openai?.toolOutput?.content?.find?.(
+          (c) => c.type === "text" && c.text,
+        );
+        if (textBlock?.text) {
+          try {
+            const parsed = JSON.parse(textBlock.text);
+            if (parsed.rde_summary) return parsed.rde_summary;
+            if (parsed.format === "kotonoha.rde_summary.v0.1") return parsed;
+          } catch (_) {
+            /* ignore — do not render raw logs */
+          }
+        }
+        return null;
+      }
+
+      function renderBanner(summary) {
+        return `<div class="banner">
+          <p>${summary.banner_en}</p>
+          <p>${summary.banner_ja}</p>
+        </div>`;
+      }
+
+      function renderValidated(summary) {
+        const L = LABELS[locale];
+        const rows = Object.entries(summary.category_counts || {})
+          .map(([key, count]) => {
+            const label = CATEGORY_LABELS[key]?.[locale] ?? key;
+            return `<tr><td>${label}</td><td>${count}</td></tr>`;
+          })
+          .join("");
+        return `
+          ${renderBanner(summary)}
+          <h1>${L.title_valid}</h1>
+          <dl class="meta">
+            <dt>${L.spec}:</dt><dd>${summary.spec_version}</dd><br/>
+            <dt>${L.subject}:</dt><dd>${summary.subject_ref}</dd><br/>
+            <dt>${L.total}:</dt><dd>${summary.total_items}</dd>
+          </dl>
+          <table>
+            <thead><tr><th>${L.category}</th><th>${L.count}</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      }
+
+      function renderError(summary) {
+        const L = LABELS[locale];
+        const issue =
+          summary.issue_count != null
+            ? ` (${summary.issue_count})`
+            : "";
+        return `
+          ${renderBanner(summary)}
+          <h1>${L.title_error}</h1>
+          <div class="error">
+            <p><strong>en:</strong> ${summary.message_en}${issue}</p>
+            <p><strong>ja:</strong> ${summary.message_ja}</p>
+            <p>exit ${summary.exit_code} · ${summary.exit_label}</p>
+          </div>`;
+      }
+
+      function render() {
+        const root = document.getElementById("app");
+        const summary = resolveSummary();
+        const L = LABELS[locale];
+        if (!summary) {
+          root.innerHTML = `<p class="empty">${L.no_data}</p>`;
+          return;
+        }
+        if (summary.state === "validated") {
+          root.innerHTML = `
+            <div class="locale-toggle">
+              <button type="button" data-locale="en">EN</button>
+              <button type="button" data-locale="ja">JA</button>
+            </div>
+            ${renderValidated(summary)}`;
+        } else if (summary.state === "validation_error") {
+          root.innerHTML = `
+            <div class="locale-toggle">
+              <button type="button" data-locale="en">EN</button>
+              <button type="button" data-locale="ja">JA</button>
+            </div>
+            ${renderError(summary)}`;
+        } else {
+          root.innerHTML = `<p class="empty">${L.no_data}</p>`;
+        }
+        root.querySelectorAll("[data-locale]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            locale = btn.getAttribute("data-locale");
+            render();
+          });
+        });
+      }
+
+      render();
+      window.addEventListener("openai:set_globals", render);
+    </script>
+  </body>
+</html>

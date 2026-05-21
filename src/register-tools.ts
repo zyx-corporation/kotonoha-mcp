@@ -12,6 +12,12 @@ import {
   toolResultFromCli,
   withTempJsonFile,
 } from "./kotonoha.js";
+import {
+  buildValidationErrorSummary,
+  parseValidatedRdeSummary,
+  toolResultWithRdeSummary,
+} from "./rde-summary.js";
+import { RDE_SUMMARY_WIDGET_URI } from "./widget.js";
 
 const uuid = z.string().uuid();
 const optionalObservationJson = z
@@ -91,17 +97,39 @@ export function registerKotonohaTools(server: McpServer): void {
       inputSchema: z.object({
         rde_json: z.string().describe("RDE review output JSON string"),
       }),
+      _meta: {
+        ui: { resourceUri: RDE_SUMMARY_WIDGET_URI },
+        "openai/outputTemplate": RDE_SUMMARY_WIDGET_URI,
+        "openai/toolInvocation/invoking": "Validating RDE…",
+        "openai/toolInvocation/invoked": "RDE validation complete",
+      },
     },
     async ({ rde_json }) => {
       const result = await runKotonoha({
         args: ["rde", "validate", "--strict"],
         stdin: rde_json,
       });
-      const extra =
+      if (result.exitCode === 0) {
+        const summary = parseValidatedRdeSummary(rde_json);
+        if (summary) {
+          return toolResultWithRdeSummary(
+            result,
+            summary,
+            undefined,
+            RDE_SUMMARY_WIDGET_URI,
+          );
+        }
+        return toolResultFromCli(result, {
+          hint_en: "Validation passed but RDE summary could not be parsed for the widget.",
+          hint_ja: "検証は成功しましたがウィジェット用要約を解析できませんでした。",
+        });
+      }
+      const hints =
         result.exitCode === 2
           ? { hint_en: i18n.validateFailedEn, hint_ja: i18n.validateFailedJa }
           : {};
-      return toolResultFromCli(result, extra);
+      const summary = buildValidationErrorSummary(result, hints);
+      return toolResultWithRdeSummary(result, summary, hints, RDE_SUMMARY_WIDGET_URI);
     },
   );
 
@@ -257,6 +285,12 @@ export function registerKotonohaTools(server: McpServer): void {
         rde_json: z.string(),
         strict: z.boolean().optional().default(true),
       }),
+      _meta: {
+        ui: { resourceUri: RDE_SUMMARY_WIDGET_URI },
+        "openai/outputTemplate": RDE_SUMMARY_WIDGET_URI,
+        "openai/toolInvocation/invoking": "Attaching RDE…",
+        "openai/toolInvocation/invoked": "RDE attached",
+      },
     },
     async ({ delta_id, rde_json, strict }) => {
       const args = [
@@ -271,18 +305,32 @@ export function registerKotonohaTools(server: McpServer): void {
         args.push("--strict");
       }
       const result = await runKotonoha({ args, stdin: rde_json });
-      if (result.exitCode === 0) {
-        return toolResultFromCli(result, {
-          rde_assessment_id: result.stdout.trim(),
-        });
+      const assessmentExtra =
+        result.exitCode === 0
+          ? { rde_assessment_id: result.stdout.trim() }
+          : {};
+      const validated = parseValidatedRdeSummary(rde_json);
+      if (result.exitCode === 0 && validated) {
+        return toolResultWithRdeSummary(
+          result,
+          validated,
+          assessmentExtra,
+          RDE_SUMMARY_WIDGET_URI,
+        );
       }
       if (result.exitCode === 2) {
-        return toolResultFromCli(result, {
+        const summary = buildValidationErrorSummary(result, {
           hint_en: i18n.validateFailedEn,
           hint_ja: i18n.validateFailedJa,
         });
+        return toolResultWithRdeSummary(
+          result,
+          summary,
+          { hint_en: i18n.validateFailedEn, hint_ja: i18n.validateFailedJa },
+          RDE_SUMMARY_WIDGET_URI,
+        );
       }
-      return toolResultFromCli(result);
+      return toolResultFromCli(result, assessmentExtra);
     },
   );
 
