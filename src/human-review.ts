@@ -1,9 +1,10 @@
 /**
- * Human Review Preparation — no review.* MCP tools (#135).
+ * Human Review Preparation (#135) + Agent Approve UI package (#136).
  */
 
 import { i18n } from "./i18n.js";
 import { runKotonoha, toolResultFromCli, type ToolResultPayload } from "./kotonoha.js";
+import { HUMAN_REVIEW_WIDGET_URI } from "./widget.js";
 
 export function buildHumanReviewApproveCommand(opts: {
   deltaId: string;
@@ -100,6 +101,27 @@ export async function prepareHumanReviewPackage(input: {
     status_summary_ja: status.ja,
     human_responsibility_banner_en: `${i18n.agentPrepareEn} ${i18n.humanBannerEn}`,
     human_responsibility_banner_ja: `${i18n.agentPrepareJa} ${i18n.humanBannerJa}`,
+    human_decision_confirm_en: i18n.humanDecisionConfirmEn,
+    human_decision_confirm_ja: i18n.humanDecisionConfirmJa,
+    approve_ui: {
+      enabled: true,
+      widget_uri: HUMAN_REVIEW_WIDGET_URI,
+      tools: {
+        approve: "kotonoha_review_approve",
+        hold: "kotonoha_review_hold",
+        reject: "kotonoha_review_reject",
+      },
+      labels_en: {
+        approve: i18n.approveCtaEn,
+        hold: i18n.holdCtaEn,
+        reject: i18n.rejectCtaEn,
+      },
+      labels_ja: {
+        approve: i18n.approveCtaJa,
+        hold: i18n.holdCtaJa,
+        reject: i18n.rejectCtaJa,
+      },
+    },
     next_actions: {
       open_human_review_en: i18n.openHumanReviewEn,
       open_human_review_ja: i18n.openHumanReviewJa,
@@ -119,5 +141,10 @@ export async function prepareHumanReviewPackage(input: {
         text: JSON.stringify(packagePayload, null, 2),
       },
     ],
+    structuredContent: packagePayload,
+    _meta: {
+      ui: { resourceUri: HUMAN_REVIEW_WIDGET_URI },
+      "openai/outputTemplate": HUMAN_REVIEW_WIDGET_URI,
+    },
   };
 }

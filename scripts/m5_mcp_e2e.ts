@@ -102,14 +102,20 @@ async function main(): Promise<void> {
 
   const tools = await client.listTools();
   const names = new Set(tools.tools.map((t) => t.name));
-  for (const forbidden of [
-    "kotonoha_review_approve",
-    "review.approve",
-    "kotonoha_git_push",
-  ]) {
+  for (const forbidden of ["review.approve", "kotonoha_git_push"]) {
     assert.ok(!names.has(forbidden), `forbidden tool registered: ${forbidden}`);
   }
-  console.log("ok: no review.* / git MCP tools");
+  for (const required of [
+    "kotonoha_review_approve",
+    "kotonoha_review_hold",
+    "kotonoha_review_reject",
+  ]) {
+    assert.ok(names.has(required), `missing human review tool: ${required}`);
+  }
+  const approveTool = tools.tools.find((t) => t.name === "kotonoha_review_approve");
+  const schemaJson = JSON.stringify(approveTool?.inputSchema ?? {});
+  assert.ok(!schemaJson.includes("agent_run_id"), "review tool must not expose agent_run_id");
+  console.log("ok: human review MCP tools present; no autonomous git/review.approve alias");
 
   console.log("--- Step 1: kotonoha_context_export (MCP) ---");
   const ctxResult = await client.callTool({
@@ -243,22 +249,21 @@ async function main(): Promise<void> {
   assert.match(deny.stderr, /denied_actions/);
   console.log("ok: capability deny exit 2");
 
-  console.log("--- Step 8: human review approve (CLI — no --agent-run-id) ---");
-  const human = await runKotonoha({
-    args: [
-      "review",
-      "approve",
-      "--delta-id",
-      deltaId!,
-      "--assessment-id",
-      assessmentId!,
-      "--decided-by",
-      "human-reviewer",
-    ],
-    cwd: workdir,
+  console.log("--- Step 8: kotonoha_review_approve (MCP human path) ---");
+  const approveResult = await client.callTool({
+    name: "kotonoha_review_approve",
+    arguments: {
+      delta_id: deltaId,
+      assessment_id: assessmentId,
+      decided_by: "human-reviewer",
+    },
   });
-  assert.equal(human.exitCode, 0);
-  console.log(`review_decision_id: ${human.stdout.trim()}`);
+  const approved = parseToolPayload(approveResult);
+  assert.equal(approved.exit_code, 0, JSON.stringify(approved));
+  const hr = approved.human_review as { review_decision_id?: string } | undefined;
+  const decisionId = hr?.review_decision_id ?? approved.stdout;
+  assert.match(String(decisionId), /^[0-9a-f-]{36}$/i);
+  console.log(`review_decision_id: ${decisionId}`);
 
   await transport.close();
   console.log("== M5 MCP E2E complete ==");

@@ -121,6 +121,8 @@ export async function withTempJsonFile<T>(
 export type ToolResultPayload = {
   content: { type: "text"; text: string }[];
   isError?: boolean;
+  structuredContent?: Record<string, unknown>;
+  _meta?: Record<string, unknown>;
 };
 
 export function toolResultFromCli(

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0] — 2026-05-21
+
+### Added
+
+- **#136:** Agent Approve UI — `ui://kotonoha/human-review`, `kotonoha_review_{approve,hold,reject}` (human path; clears `KOTONOHA_AGENT_RUN_ID`).
+- `kotonoha_prepare_human_review` returns `structuredContent` + Approve UI metadata.
+
 ## [0.3.0] — 2026-05-21
 
 ### Added

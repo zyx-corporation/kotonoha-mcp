@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kotonoha Human Review</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        line-height: 1.45;
+      }
+      body {
+        margin: 0;
+        padding: 12px 14px;
+      }
+      .banner {
+        font-size: 0.85rem;
+        opacity: 0.9;
+        border-left: 3px solid #6b7280;
+        padding-left: 10px;
+        margin-bottom: 12px;
+      }
+      .banner p {
+        margin: 4px 0;
+      }
+      h1 {
+        font-size: 1.05rem;
+        margin: 0 0 10px;
+      }
+      .status {
+        font-size: 0.88rem;
+        margin-bottom: 12px;
+        padding: 0;
+        list-style: disc;
+        padding-left: 1.2rem;
+      }
+      .meta {
+        font-size: 0.85rem;
+        margin-bottom: 12px;
+        word-break: break-all;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      button {
+        cursor: pointer;
+        padding: 8px 14px;
+        border-radius: 6px;
+        border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+        background: color-mix(in srgb, currentColor 8%, transparent);
+        font-size: 0.9rem;
+      }
+      button.primary {
+        font-weight: 600;
+      }
+      button.danger {
+        border-color: #b45309;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .result {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: 6px;
+        background: color-mix(in srgb, #22c55e 14%, transparent);
+        font-size: 0.9rem;
+      }
+      .result.error {
+        background: color-mix(in srgb, #f59e0b 14%, transparent);
+      }
+      .confirm-note {
+        font-size: 0.82rem;
+        opacity: 0.85;
+        margin: 8px 0;
+      }
+      .locale-toggle button {
+        padding: 4px 8px;
+        font-size: 0.78rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">Loading…</div>
+    <script>
+      const LABELS = {
+        en: {
+          title: "Human review",
+          waiting: "Waiting for review package…",
+          no_pkg: "No human review package in tool output.",
+          delta: "MeaningDelta",
+          assessment: "Assessment",
+          decided_by: "Decided by",
+          busy: "Recording…",
+        },
+        ja: {
+          title: "人間レビュー",
+          waiting: "レビューパッケージを待機中…",
+          no_pkg: "ツール出力にレビューパッケージがありません。",
+          delta: "MeaningDelta",
+          assessment: "Assessment",
+          decided_by: "判断者",
+          busy: "記録中…",
+        },
+      };
+
+      let locale = "en";
+      let busy = false;
+
+      function pkg() {
+        const o = window.openai;
+        const sc =
+          o?.toolOutput?.structuredContent ??
+          o?.toolOutput;
+        if (sc?.format === "kotonoha.human_review_package.v0.1") return sc;
+        if (sc?.format === "kotonoha.human_review_result.v0.1") {
+          return {
+            meaning_delta_id: sc.meaning_delta_id,
+            rde_assessment_id: sc.rde_assessment_id,
+            human_responsibility_banner_en: sc.banner_en,
+            human_responsibility_banner_ja: sc.banner_ja,
+            status_summary_en: [],
+            status_summary_ja: [],
+            approve_ui: { enabled: false },
+            _result: sc,
+          };
+        }
+        try {
+          const t = o?.toolOutput?.content?.find?.((c) => c.type === "text");
+          if (t?.text) {
+            const p = JSON.parse(t.text);
+            if (p.format === "kotonoha.human_review_package.v0.1") return p;
+            if (p.human_review) return p.human_review;
+          }
+        } catch (_) {}
+        return null;
+      }
+
+      function labels(p) {
+        const ui = p?.approve_ui;
+        if (locale === "ja" && ui?.labels_ja) return ui.labels_ja;
+        return (
+          ui?.labels_en ?? {
+            approve: "Approve",
+            hold: "Hold",
+            reject: "Reject",
+          }
+        );
+      }
+
+      function confirmMsg(p, kind) {
+        const en =
+          p?.human_decision_confirm_en ??
+          "You are recording a human decision.";
+        const ja = p?.human_decision_confirm_ja ?? "人間による判断を記録します。";
+        const action = labels(p)[kind] ?? kind;
+        return locale === "ja"
+          ? `${ja}\n\n操作: ${action}`
+          : `${en}\n\nAction: ${action}`;
+      }
+
+      async function callReview(kind, p) {
+        if (busy || !window.openai?.callTool) {
+          alert(
+            locale === "ja"
+              ? "MCP ツール呼び出しが利用できません。"
+              : "MCP callTool is not available in this host.",
+          );
+          return;
+        }
+        if (!confirm(confirmMsg(p, kind))) return;
+        busy = true;
+        render();
+        const toolName =
+          p.approve_ui?.tools?.[kind] ?? `kotonoha_review_${kind}`;
+        try {
+          const decidedBy =
+            window.openai?.userAgent?.user?.email ??
+            window.openai?.toolInput?.decided_by ??
+            "human";
+          await window.openai.callTool(toolName, {
+            delta_id: p.meaning_delta_id,
+            assessment_id: p.rde_assessment_id ?? undefined,
+            decided_by: decidedBy,
+          });
+        } catch (e) {
+          alert(String(e));
+        } finally {
+          busy = false;
+          render();
+        }
+      }
+
+      function render() {
+        const root = document.getElementById("app");
+        const L = LABELS[locale];
+        const p = pkg();
+        if (!p) {
+          root.innerHTML = `<p>${L.no_pkg}</p>`;
+          return;
+        }
+
+        const statusList =
+          locale === "ja" ? p.status_summary_ja : p.status_summary_en;
+        const statusHtml = (statusList ?? [])
+          .map((s) => `<li>${s}</li>`)
+          .join("");
+
+        const result = p._result;
+        const resultHtml = result
+          ? `<div class="result${result.review_decision_id ? "" : " error"}">
+              <p><strong>${result.decision}</strong> · ${result.review_decision_id ?? "failed"}</p>
+              <p>${result.confirm_en}</p>
+            </div>`
+          : "";
+
+        const lbl = labels(p);
+        const showActions = p.approve_ui?.enabled !== false && !result?.review_decision_id;
+
+        root.innerHTML = `
+          <div class="locale-toggle">
+            <button type="button" data-locale="en">EN</button>
+            <button type="button" data-locale="ja">JA</button>
+          </div>
+          <div class="banner">
+            <p>${p.human_responsibility_banner_en ?? ""}</p>
+            <p>${p.human_responsibility_banner_ja ?? ""}</p>
+          </div>
+          <h1>${L.title}</h1>
+          <ul class="status">${statusHtml}</ul>
+          <div class="meta">
+            <div>${L.delta}: <code>${p.meaning_delta_id}</code></div>
+            ${
+              p.rde_assessment_id
+                ? `<div>${L.assessment}: <code>${p.rde_assessment_id}</code></div>`
+                : ""
+            }
+          </div>
+          ${resultHtml}
+          ${
+            showActions
+              ? `<p class="confirm-note">${p.human_decision_confirm_en ?? ""}<br/>${p.human_decision_confirm_ja ?? ""}</p>
+                 <div class="actions">
+                   <button type="button" class="primary" data-action="approve" ${busy ? "disabled" : ""}>${lbl.approve}</button>
+                   <button type="button" data-action="hold" ${busy ? "disabled" : ""}>${lbl.hold}</button>
+                   <button type="button" class="danger" data-action="reject" ${busy ? "disabled" : ""}>${lbl.reject}</button>
+                 </div>`
+              : ""
+          }
+          ${busy ? `<p>${L.busy}</p>` : ""}`;
+
+        root.querySelectorAll("[data-locale]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            locale = btn.getAttribute("data-locale");
+            render();
+          });
+        });
+        root.querySelectorAll("[data-action]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            callReview(btn.getAttribute("data-action"), p);
+          });
+        });
+      }
+
+      render();
+      window.addEventListener("openai:set_globals", render);
+    </script>
+  </body>
+</html>

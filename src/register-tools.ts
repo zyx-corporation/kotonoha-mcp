@@ -17,7 +17,7 @@ import {
   parseValidatedRdeSummary,
   toolResultWithRdeSummary,
 } from "./rde-summary.js";
-import { RDE_SUMMARY_WIDGET_URI } from "./widget.js";
+import { HUMAN_REVIEW_WIDGET_URI, RDE_SUMMARY_WIDGET_URI } from "./widget.js";
 
 const uuid = z.string().uuid();
 const optionalObservationJson = z
@@ -334,7 +334,7 @@ export function registerKotonohaTools(server: McpServer): void {
     },
   );
 
-  // --- #135 Human Review Preparation (no review.* tools) ---
+  // --- #135 / #136 Human Review Preparation + Approve UI ---
 
   server.registerTool(
     "kotonoha_copy_human_review_command",
@@ -382,8 +382,8 @@ export function registerKotonohaTools(server: McpServer): void {
     {
       title: "Prepare human review package",
       description: toolDescription(
-        "Export M2 review package, status summary, and human-only CLI command. Open Human Review — not Approve.",
-        "M2 export・ステータス・人間用 CLI 導線を返す（承認操作ではない）。",
+        "Export M2 review package, status summary, and human Approve/Hold/Reject UI (human path only).",
+        "M2 export・ステータス・人間向け承認 UI 導線（人間操作のみ）。",
       ),
       inputSchema: z.object({
         delta_id: uuid,
@@ -392,6 +392,12 @@ export function registerKotonohaTools(server: McpServer): void {
         agent_run_completed: z.boolean().optional().default(true),
         rde_validation_passed: z.boolean().optional().default(true),
       }),
+      _meta: {
+        ui: { resourceUri: HUMAN_REVIEW_WIDGET_URI },
+        "openai/outputTemplate": HUMAN_REVIEW_WIDGET_URI,
+        "openai/toolInvocation/invoking": "Preparing human review…",
+        "openai/toolInvocation/invoked": "Human review ready",
+      },
     },
     async (input) => prepareHumanReviewPackage(input),
   );
