@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.1] — 2026-05-21
+
+- **M6-c** ([#138](https://github.com/zyx-corporation/kotonoha-management/issues/138)): document `KOTONOHA_PRINCIPAL_ID` / `KOTONOHA_PROJECT_ID` in server instructions (child CLI inherits via `buildChildEnv`).
+
 ## [0.4.0] — 2026-05-21
 
 ### Added
