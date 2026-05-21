@@ -1,0 +1,37 @@
+{
+  "name": "kotonoha-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Kotonoha — delegates to the kotonoha CLI (M5-P1)",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zyx-corporation/kotonoha-mcp.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "kotonoha-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test:cli": "node --import tsx/esm src/kotonoha.test.ts",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "kotonoha",
+    "semantic-lineage"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}
