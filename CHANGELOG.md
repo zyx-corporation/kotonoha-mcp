@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.2] — 2026-05-21
+
+### Added
+
+- **#134:** `scripts/contract-cli-only.sh`, `docs/mcp-server-contract.md`, `npm run contract:cli-only` (CI gate).
+
 ## [0.2.1] — 2026-05-21
 
 ### Added

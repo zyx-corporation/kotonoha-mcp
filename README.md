@@ -53,6 +53,8 @@ Steps 1–6 and human review prep use **MCP tools**; steps 7–8 (`review approv
 
 **Not exposed:** `review.approve`, `review.hold`, `review.reject`, `git.push`, `git.commit`, `shell`.
 
+**Security contract:** Only [`src/kotonoha.ts`](src/kotonoha.ts) spawns the `kotonoha` binary — no arbitrary shell ([`docs/mcp-server-contract.md`](docs/mcp-server-contract.md), `npm run contract:cli-only`).
+
 ## Human Review Preparation (#135)
 
 After the agent flow, call `kotonoha_prepare_human_review` with `delta_id` (and optional `assessment_id`, `agent_run_id`). The response includes:
