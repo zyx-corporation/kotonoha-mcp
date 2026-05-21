@@ -35,7 +35,7 @@ export KOTONOHA_WORKDIR="../kotonoha-cli"
 ./scripts/m5_mcp_e2e.sh
 ```
 
-Steps 1–6 and human review prep use **MCP tools**; steps 7–8 (`review approve`) use **CLI only** (no `review.*` MCP tools). CI: [`.github/workflows/e2e.yml`](.github/workflows/e2e.yml).
+Steps 1–6, human review prep, and human **approve** use **MCP tools**; step 7 (agent deny) uses **CLI** only. CI: [`.github/workflows/e2e.yml`](.github/workflows/e2e.yml).
 
 ## MCP tools
 
@@ -48,12 +48,21 @@ Steps 1–6 and human review prep use **MCP tools**; steps 7–8 (`review approv
 | `kotonoha_agent_record_complete` | `kotonoha agent record complete --run-id` | agent |
 | `kotonoha_meaning_delta_from_run` | `kotonoha agent delta create` | agent |
 | `kotonoha_rde_attach` | `kotonoha rde attach --source-kind llm` | agent |
-| `kotonoha_prepare_human_review` | `kotonoha export --format m2` + package | **human prep (#135)** |
+| `kotonoha_prepare_human_review` | `kotonoha export --format m2` + Approve UI package | **#135 + #136** |
 | `kotonoha_copy_human_review_command` | *(no CLI exec)* human-only command string | **human prep** |
+| `kotonoha_review_approve` / `hold` / `reject` | `kotonoha review *` (**human path** · no `--agent-run-id`) | **#136** |
 
-**Not exposed:** `review.approve`, `review.hold`, `review.reject`, `git.push`, `git.commit`, `shell`.
+**Not exposed:** autonomous `review.*` with `agent_run_id`, `git.push`, `git.commit`, `shell`.
 
 **Security contract:** Only [`src/kotonoha.ts`](src/kotonoha.ts) spawns the `kotonoha` binary — no arbitrary shell ([`docs/mcp-server-contract.md`](docs/mcp-server-contract.md), `npm run contract:cli-only`).
+
+## Agent Approve UI (#136)
+
+Resource: `ui://kotonoha/human-review` · Tools: `kotonoha_review_approve`, `kotonoha_review_hold`, `kotonoha_review_reject`.
+
+Human clicks Approve/Hold/Reject in the widget; MCP calls CLI **without** `--agent-run-id` and **without** `KOTONOHA_AGENT_RUN_ID` in the child env.
+
+See [`docs/ui-design-review-m5-agent-approve.md`](docs/ui-design-review-m5-agent-approve.md).
 
 ## Human Review Preparation (#135)
 

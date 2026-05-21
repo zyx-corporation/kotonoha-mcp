@@ -34,7 +34,39 @@ export const i18n = {
   copyCliHintJa: "人間用 CLI コマンドをコピー（--agent-run-id なし）:",
   openHumanReviewEn: "Open Human Review — use M3 or the CLI command below.",
   openHumanReviewJa: "人間レビューへ — M3 または下記 CLI コマンドを使用してください。",
+  humanDecisionConfirmEn:
+    "You are recording a human decision. This does not replace your judgment.",
+  humanDecisionConfirmJa:
+    "人間による判断を記録します。これはあなたの判断の代替ではありません。",
+  humanDecisionRecordedEn: "Human review decision recorded.",
+  humanDecisionRecordedJa: "人間レビュー判断を記録しました。",
+  approveCtaEn: "Approve",
+  approveCtaJa: "承認",
+  holdCtaEn: "Hold",
+  holdCtaJa: "保留",
+  rejectCtaEn: "Reject",
+  rejectCtaJa: "却下",
+  autonomousReviewDeniedEn:
+    "Autonomous agent review is denied. Use these buttons as a human (no --agent-run-id).",
+  autonomousReviewDeniedJa:
+    "自律エージェントのレビューは拒否されました。人間としてボタン操作してください（--agent-run-id なし）。",
 } as const;
+
+/** Tool description for human-path review MCP tools (#136). */
+export function humanReviewToolDescription(en: string, ja: string): string {
+  return [
+    en,
+    "",
+    `（日本語）${ja}`,
+    "",
+    i18n.humanBannerEn,
+    i18n.humanBannerJa,
+    i18n.humanDecisionConfirmEn,
+    i18n.humanDecisionConfirmJa,
+    "FORBIDDEN: --agent-run-id · KOTONOHA_AGENT_RUN_ID — autonomous agent review is denied.",
+    "禁止: --agent-run-id · KOTONOHA_AGENT_RUN_ID — 自律エージェントの review は拒否されます。",
+  ].join("\n");
+}
 
 /** Bilingual MCP tool description (en + ja + responsibility banner). */
 export function toolDescription(en: string, ja: string): string {
