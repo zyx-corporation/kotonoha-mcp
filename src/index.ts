@@ -28,7 +28,7 @@ const server = new McpServer(
       "Human review: kotonoha_review_approve|hold|reject (human path only; no --agent-run-id).",
       "Tools invoke the local `kotonoha` CLI only (no arbitrary shell).",
       `CLI: ${resolveKotonohaBin()}. Workdir: ${resolveWorkdir()}.`,
-      "Env: KOTONOHA_BIN, KOTONOHA_WORKDIR, DATABASE_URL.",
+      "Env: KOTONOHA_BIN, KOTONOHA_WORKDIR, DATABASE_URL, KOTONOHA_PRINCIPAL_ID, KOTONOHA_PROJECT_ID (M6).",
     ].join("\n"),
   },
 );
