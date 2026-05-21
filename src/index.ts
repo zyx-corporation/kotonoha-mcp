@@ -10,11 +10,12 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { i18n } from "./i18n.js";
 import { registerKotonohaTools } from "./register-tools.js";
 import { resolveKotonohaBin, resolveWorkdir } from "./kotonoha.js";
+import { registerRdeSummaryWidget } from "./widget.js";
 
 const server = new McpServer(
   {
     name: "kotonoha-mcp",
-    version: "0.2.1",
+    version: "0.3.0",
   },
   {
     instructions: [
@@ -31,6 +32,7 @@ const server = new McpServer(
   },
 );
 
+registerRdeSummaryWidget(server);
 registerKotonohaTools(server);
 
 async function main(): Promise<void> {

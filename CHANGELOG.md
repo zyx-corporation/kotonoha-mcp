@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0] — 2026-05-21
+
+### Added
+
+- **#132:** Minimal RDE summary widget — `web/rde-summary-widget.html`, `ui://kotonoha/rde-summary` resource, `kotonoha.rde_summary.v0.1` structured output on validate/attach.
+- `src/rde-summary.ts`, `npm run test:unit`, [`docs/ui-design-review-m5-impl.md`](docs/ui-design-review-m5-impl.md).
+
 ## [0.2.2] — 2026-05-21
 
 ### Added
