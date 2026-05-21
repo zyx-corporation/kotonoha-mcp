@@ -2,7 +2,7 @@
 
 **MCP server** for the Kotonoha ecosystem. Tools delegate to the official [`kotonoha`](https://github.com/zyx-corporation/kotonoha-cli) CLI (no arbitrary shell execution).
 
-**Track:** [#128](https://github.com/zyx-corporation/kotonoha-management/issues/128) · [#129](https://github.com/zyx-corporation/kotonoha-management/issues/129) scaffold · [#130](https://github.com/zyx-corporation/kotonoha-management/issues/130) tools · [#135](https://github.com/zyx-corporation/kotonoha-management/issues/135) human review prep UI
+**Track:** [#128](https://github.com/zyx-corporation/kotonoha-management/issues/128) · [#129](https://github.com/zyx-corporation/kotonoha-management/issues/129) scaffold · [#130](https://github.com/zyx-corporation/kotonoha-management/issues/130) tools · [#131](https://github.com/zyx-corporation/kotonoha-management/issues/131) E2E · [#135](https://github.com/zyx-corporation/kotonoha-management/issues/135) human review prep UI
 
 **Normative UX:** [`04_mcp_tools_and_ux.md`](https://github.com/zyx-corporation/kotonoha-management/blob/main/docs/chatgpt-app/04_mcp_tools_and_ux.md)
 
@@ -20,8 +20,22 @@ npm install && npm run build
 export KOTONOHA_BIN="../kotonoha-cli/target/release/kotonoha"
 export DATABASE_URL="postgres://..."
 npm run test:cli
+npm run test:e2e   # #131 — needs DATABASE_URL + Git workdir
 npm start
 ```
+
+### M5 MCP E2E (#131)
+
+Equivalent to [`m5_agent_run_demo.sh`](https://github.com/zyx-corporation/kotonoha-cli/blob/main/scripts/m5_agent_run_demo.sh):
+
+```bash
+export DATABASE_URL="postgres://..."
+export KOTONOHA_BIN="../kotonoha-cli/target/release/kotonoha"
+export KOTONOHA_WORKDIR="../kotonoha-cli"
+./scripts/m5_mcp_e2e.sh
+```
+
+Steps 1–6 and human review prep use **MCP tools**; steps 7–8 (`review approve`) use **CLI only** (no `review.*` MCP tools). CI: [`.github/workflows/e2e.yml`](.github/workflows/e2e.yml).
 
 ## MCP tools
 

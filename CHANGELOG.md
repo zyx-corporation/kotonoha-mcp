@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1] — 2026-05-21
+
+### Added
+
+- **#131:** `scripts/m5_mcp_e2e.ts` + `m5_mcp_e2e.sh` — MCP stdio client E2E (§6.1 + §4.5 exit 2 probe).
+- `npm run test:e2e`; GitHub Actions [`.github/workflows/e2e.yml`](.github/workflows/e2e.yml).
+
 ## [0.2.0] — 2026-05-21
 
 ### Added
