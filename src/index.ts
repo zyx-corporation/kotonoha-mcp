@@ -14,7 +14,7 @@ import { resolveKotonohaBin, resolveWorkdir } from "./kotonoha.js";
 const server = new McpServer(
   {
     name: "kotonoha-mcp",
-    version: "0.2.0",
+    version: "0.2.1",
   },
   {
     instructions: [
