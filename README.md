@@ -9,7 +9,7 @@
 ## Requirements
 
 - **Node.js** ≥ 18
-- **`kotonoha`** 0.2.6+ on `PATH`, or **`KOTONOHA_BIN`**
+- **`kotonoha`** 0.2.9+ on `PATH`, or **`KOTONOHA_BIN`**
 - DB tools: **`DATABASE_URL`** + `kotonoha db migrate`
 - **`KOTONOHA_WORKDIR`**: Git repository root
 
@@ -104,4 +104,4 @@ Design record: [`docs/ui-design-review-m5-impl.md`](docs/ui-design-review-m5-imp
 
 ## License
 
-Apache-2.0 — see [LICENSE](LICENSE).
+Apache-2.0 — see [LICENSE].
