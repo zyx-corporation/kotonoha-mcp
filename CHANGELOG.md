@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **M8** ([management#176](https://github.com/zyx-corporation/kotonoha-management/issues/176)): add `kotonoha_rde_draft`, delegating to `kotonoha rde draft --delta-id`, with RDE summary widget metadata and explicit human-review boundary.
+
 ## [0.4.1] — 2026-05-21
 
 - **M6-c** ([#138](https://github.com/zyx-corporation/kotonoha-management/issues/138)): document `KOTONOHA_PRINCIPAL_ID` / `KOTONOHA_PROJECT_ID` in server instructions (child CLI inherits via `buildChildEnv`).

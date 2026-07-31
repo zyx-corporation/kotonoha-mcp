@@ -45,6 +45,7 @@ Steps 1–6, human review prep, and human **approve** use **MCP tools**; step 7 
 | --- | --- | --- |
 | `kotonoha_ping` | `kotonoha version` | health |
 | `kotonoha_context_export` | `kotonoha context export FILE` | readonly |
+| `kotonoha_rde_draft` | `kotonoha rde draft --delta-id` | **M8 draft assistance** |
 | `kotonoha_rde_validate` | `kotonoha rde validate --strict` (stdin) | readonly |
 | `kotonoha_agent_record_start` | `kotonoha agent record start` | agent |
 | `kotonoha_agent_record_complete` | `kotonoha agent record complete --run-id` | agent |

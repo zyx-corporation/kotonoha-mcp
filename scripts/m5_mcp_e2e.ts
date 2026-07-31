@@ -26,6 +26,8 @@ import { exitCodeLabel, resolveKotonohaBin, runKotonoha } from "../src/kotonoha.
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const mcpRoot = join(scriptDir, "..");
 const serverEntry = join(mcpRoot, "dist", "index.js");
+const legacyPrincipalId = "00000000-0000-4000-8000-000000000001";
+const legacyProjectId = "00000000-0000-4000-8000-000000000002";
 
 type ToolPayload = {
   exit_code?: number;
@@ -58,6 +60,23 @@ function resolveDefaultWorkdir(): string {
   return siblingCli;
 }
 
+async function setLegacyProjectRole(databaseUrl: string, role: "agent_runner" | "reviewer"): Promise<void> {
+  const { Client: PgClient } = await import("pg");
+  const client = new PgClient({ connectionString: databaseUrl });
+  await client.connect();
+  try {
+    await client.query(
+      `INSERT INTO project_members (project_id, principal_id, role)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (project_id, principal_id)
+       DO UPDATE SET role = EXCLUDED.role`,
+      [legacyProjectId, legacyPrincipalId, role],
+    );
+  } finally {
+    await client.end();
+  }
+}
+
 async function main(): Promise<void> {
   const bin = resolveKotonohaBin();
   const workdir = resolveDefaultWorkdir();
@@ -74,6 +93,9 @@ async function main(): Promise<void> {
   console.log(`MCP server=${serverEntry}`);
 
   await runKotonoha({ args: ["db", "migrate"], cwd: workdir });
+  process.env.KOTONOHA_PROJECT_ID ??= legacyProjectId;
+  process.env.KOTONOHA_PRINCIPAL_ID ??= legacyPrincipalId;
+  await setLegacyProjectRole(databaseUrl, "agent_runner");
 
   const demoRel = process.env.M5_DEMO_FILE?.trim() || "docs/m5_mcp_e2e_scratch.md";
   const demoAbs = join(workdir, demoRel);
@@ -93,6 +115,8 @@ async function main(): Promise<void> {
       KOTONOHA_BIN: bin,
       KOTONOHA_WORKDIR: workdir,
       DATABASE_URL: databaseUrl,
+      KOTONOHA_PROJECT_ID: process.env.KOTONOHA_PROJECT_ID,
+      KOTONOHA_PRINCIPAL_ID: process.env.KOTONOHA_PRINCIPAL_ID,
     },
     stderr: "pipe",
   });
@@ -150,7 +174,7 @@ async function main(): Promise<void> {
   assert.equal(badPayload.exit_label, exitCodeLabel(2));
   console.log("ok: exit 2 mapped to MCP client");
 
-  const rdeJson = emit.stdout;
+  let rdeJson = emit.stdout;
 
   console.log("--- Step 3: kotonoha_agent_record_start (MCP) ---");
   const startResult = await client.callTool({
@@ -185,6 +209,18 @@ async function main(): Promise<void> {
   const deltaId = deltaPayload.meaning_delta_id ?? deltaPayload.stdout;
   assert.match(deltaId ?? "", /^[0-9a-f-]{36}$/i);
   console.log(`meaning_delta_id: ${deltaId}`);
+
+  console.log("--- M8: kotonoha_rde_draft (MCP) ---");
+  const draftResult = await client.callTool({
+    name: "kotonoha_rde_draft",
+    arguments: { delta_id: deltaId },
+  });
+  const draftPayload = parseToolPayload(draftResult);
+  assert.equal(draftPayload.exit_code, 0, JSON.stringify(draftPayload));
+  rdeJson = String(draftPayload.rde_json ?? "");
+  assert.match(rdeJson, /kotonoha:meaning_delta:/);
+  assert.match(rdeJson, /next_update_policy/);
+  console.log("ok: RDE draft generated via MCP");
 
   console.log("--- Step 5: kotonoha_rde_attach (MCP) ---");
   const attachResult = await client.callTool({
@@ -250,6 +286,7 @@ async function main(): Promise<void> {
   console.log("ok: capability deny exit 2");
 
   console.log("--- Step 8: kotonoha_review_approve (MCP human path) ---");
+  await setLegacyProjectRole(databaseUrl, "reviewer");
   const approveResult = await client.callTool({
     name: "kotonoha_review_approve",
     arguments: {
