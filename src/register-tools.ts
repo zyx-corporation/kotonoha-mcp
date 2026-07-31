@@ -87,6 +87,60 @@ export function registerKotonohaTools(server: McpServer): void {
   );
 
   server.registerTool(
+    "kotonoha_rde_draft",
+    {
+      title: "Draft RDE from MeaningDelta",
+      description: toolDescription(
+        "Draft provider-neutral RDE candidate JSON from a MeaningDelta. Assistance only; human review is still required.",
+        "MeaningDelta から RDE 候補 JSON を下書き生成（支援のみ・人間レビュー必須）。",
+      ),
+      inputSchema: z.object({
+        delta_id: uuid,
+        wrap: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe("Return draft metadata wrapper instead of raw attachable RDE JSON"),
+      }),
+      _meta: {
+        ui: { resourceUri: RDE_SUMMARY_WIDGET_URI },
+        "openai/outputTemplate": RDE_SUMMARY_WIDGET_URI,
+        "openai/toolInvocation/invoking": "Drafting RDE…",
+        "openai/toolInvocation/invoked": "RDE draft ready",
+      },
+    },
+    async ({ delta_id, wrap }) => {
+      const args = ["rde", "draft", "--delta-id", delta_id];
+      if (wrap) {
+        args.push("--wrap");
+      }
+      const result = await runKotonoha({ args });
+      if (result.exitCode === 0 && !wrap) {
+        const summary = parseValidatedRdeSummary(result.stdout);
+        if (summary) {
+          return toolResultWithRdeSummary(
+            result,
+            summary,
+            {
+              rde_json: result.stdout.trimEnd(),
+              boundary_en:
+                "Draft assistance is not approval; validate, attach, then record human review separately.",
+              boundary_ja:
+                "下書き支援は承認ではありません。検証・attach 後、人間レビューを別途記録してください。",
+            },
+            RDE_SUMMARY_WIDGET_URI,
+          );
+        }
+      }
+      return toolResultFromCli(result, {
+        ...(result.exitCode === 0
+          ? { rde_json: result.stdout.trimEnd() }
+          : {}),
+      });
+    },
+  );
+
+  server.registerTool(
     "kotonoha_rde_validate",
     {
       title: "Validate RDE JSON",
